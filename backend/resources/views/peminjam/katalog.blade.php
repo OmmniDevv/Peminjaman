@@ -108,9 +108,23 @@
                                     >
                                 </td>
 
-                                {{-- Nama --}}
+                                {{-- Nama + Gambar --}}
                                 <td class="py-4 px-4 font-medium text-gray-800">
-                                    {{ $alat->nama_alat }}
+                                    <div class="flex items-center gap-3">
+                                        @if($alat->gambar)
+                                            <img src="{{ asset($alat->gambar) }}"
+                                                 alt="{{ $alat->nama_alat }}"
+                                                 class="w-12 h-12 object-cover rounded-lg border border-gray-200 shrink-0"
+                                                 onerror="this.style.display='none'">
+                                        @else
+                                            <div class="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                                                <svg class="w-6 h-6 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01"/>
+                                                </svg>
+                                            </div>
+                                        @endif
+                                        <span>{{ $alat->nama_alat }}</span>
+                                    </div>
                                 </td>
 
                                 {{-- Kategori --}}

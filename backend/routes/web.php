@@ -101,6 +101,8 @@ Route::middleware(['auth', 'role:peminjam'])->prefix('peminjam')->name('peminjam
         ->name('peminjaman.index');
     Route::get('/pengembalian', [PeminjamController::class, 'pengembalian'])
         ->name('pengembalian.index');
+    Route::post('/pengembalian/{peminjaman}/ajukan', [PeminjamController::class, 'ajukanPengembalian'])
+        ->name('pengembalian.ajukan');
 
 });
 

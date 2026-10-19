@@ -107,12 +107,13 @@ public function indexPeminjaman(Request $request)
         'user',
         'detailPinjams.alat'
     ])
-    ->where('status', 'dipinjam')
+    ->whereIn('status', ['dipinjam', 'pengajuan_kembali'])
     ->when($search, function ($query, $search) {
         $query->whereHas('user', function ($q) use ($search) {
             $q->where('name', 'like', "%{$search}%");
         });
     })
+    ->orderByRaw("FIELD(status, 'pengajuan_kembali', 'dipinjam')")
     ->latest('tgl_pinjam')
     ->get();
 

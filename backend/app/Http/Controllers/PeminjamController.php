@@ -79,11 +79,26 @@ class PeminjamController extends Controller
             'pengembalian'
         ])
             ->where('user_id', auth()->id())
-            ->where('status', 'dipinjam')
+            ->whereIn('status', ['dipinjam', 'pengajuan_kembali'])
             ->latest()
             ->get();
 
         return view('peminjam.pengembalian', compact('peminjamans'));
+    }
+
+    public function ajukanPengembalian(Peminjaman $peminjaman)
+    {
+        if ($peminjaman->user_id !== auth()->id()) {
+            return back()->with('error', 'Data peminjaman tidak ditemukan.');
+        }
+
+        if ($peminjaman->status !== 'dipinjam') {
+            return back()->with('error', 'Hanya peminjaman berstatus dipinjam yang bisa diajukan pengembaliannya.');
+        }
+
+        $peminjaman->update(['status' => 'pengajuan_kembali']);
+
+        return back()->with('success', 'Pengajuan pengembalian berhasil dikirim. Tunggu petugas memprosesnya.');
     }
 
     // Melihat riwayat peminjaman user yang sedang login

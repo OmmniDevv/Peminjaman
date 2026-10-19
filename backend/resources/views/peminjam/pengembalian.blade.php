@@ -38,8 +38,8 @@
                             </p>
                         </div>
 
-                        <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
-                            Sedang Dipinjam
+                        <span class="px-3 py-1 rounded-full text-sm font-semibold {{ $peminjaman->status === 'pengajuan_kembali' ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700' }}">
+                            {{ $peminjaman->status === 'pengajuan_kembali' ? 'Menunggu ACC Petugas' : 'Sedang Dipinjam' }}
                         </span>
 
                     </div>
@@ -92,13 +92,32 @@
 
                         <div class="mt-5 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
 
-                            <p class="font-semibold text-yellow-700">
-                                Belum Dikembalikan
-                            </p>
+                            @if($peminjaman->status === 'pengajuan_kembali')
+                                <p class="font-semibold text-yellow-700">
+                                    Menunggu ACC Petugas
+                                </p>
 
-                            <p class="text-sm text-yellow-600 mt-1">
-                                Silakan serahkan alat kepada petugas untuk proses pengembalian.
-                            </p>
+                                <p class="text-sm text-yellow-600 mt-1">
+                                    Pengajuan pengembalianmu sudah dikirim. Petugas akan segera memprosesnya.
+                                </p>
+                            @else
+                                <p class="font-semibold text-yellow-700">
+                                    Belum Dikembalikan
+                                </p>
+
+                                <p class="text-sm text-yellow-600 mt-1">
+                                    Silakan ajukan pengembalian agar petugas dapat memprosesnya.
+                                </p>
+
+                                <form action="{{ route('peminjam.pengembalian.ajukan', $peminjaman) }}" method="POST" class="mt-3"
+                                      onsubmit="return confirm('Ajukan pengembalian untuk peminjaman ini?')">
+                                    @csrf
+                                    <button type="submit"
+                                            class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2.5 rounded-lg transition">
+                                        Ajukan Pengembalian
+                                    </button>
+                                </form>
+                            @endif
 
                         </div>
 
