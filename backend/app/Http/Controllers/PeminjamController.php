@@ -40,11 +40,11 @@ class PeminjamController extends Controller
             ]);
 
             // Masukkan daftar alat yang dipinjam ke detail_pinjam
-            foreach ($request->alat_id as $index => $alatId) {
+            foreach ($request->alat_id as $alatId) {
                 DetailPinjam::create([
                     'peminjaman_id' => $peminjaman->id,
                     'alat_id' => $alatId,
-                    'jumlah' => $request->jumlah[$index],
+                    'jumlah' => $request->jumlah[$alatId] ?? 1,
                 ]);
             }
 

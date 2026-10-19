@@ -128,7 +128,7 @@
 
                                     <input
                                         type="number"
-                                        name="jumlah[]"
+                                        name="jumlah[{{ $alat->id }}]"
                                         value="1"
                                         min="1"
                                         max="{{ $alat->stok }}"
