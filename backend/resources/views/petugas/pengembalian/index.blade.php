@@ -94,7 +94,7 @@
 
                             <ul class="list-disc list-inside space-y-1">
 
-                                @foreach($peminjaman->detailPinjams as $detail)
+                                @foreach($peminjaman->detailPinjam as $detail)
 
                                     <li>
 

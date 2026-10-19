@@ -82,7 +82,7 @@
 
                         <ul class="list-disc list-inside text-sm text-gray-600 space-y-1">
 
-                            @foreach($peminjaman->detailPinjams as $detail)
+                            @foreach($peminjaman->detailPinjam as $detail)
 
                                 <li>
                                     {{ $detail->alat->nama_alat }}

@@ -64,7 +64,7 @@
                 </h3>
 
                 <div class="space-y-3">
-                    @foreach($peminjaman->detailPinjams as $detail)
+                    @foreach($peminjaman->detailPinjam as $detail)
 
                         <div class="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-3">
 

@@ -15,6 +15,7 @@ class Pengembalian extends Model
         'tgl_kembali',
         'kondisi_kembali',
         'denda',
+        'denda_kerusakan',
         'petugas_id',
     ];
 

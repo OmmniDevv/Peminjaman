@@ -216,7 +216,7 @@
 
                     <td>
                         <ul>
-                            @foreach($pengembalian->peminjaman->detailPinjams as $detail)
+                            @foreach($pengembalian->peminjaman->detailPinjam as $detail)
                                 <li>
                                     {{ $detail->alat->nama_alat ?? 'Alat Dihapus' }}
                                     ({{ $detail->jumlah }} pcs)

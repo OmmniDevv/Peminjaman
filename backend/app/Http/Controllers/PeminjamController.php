@@ -24,13 +24,23 @@ class PeminjamController extends Controller
     {
         $request->validate([
             'tgl_kembali_plan' => 'required|date|after:today',
-            'alat_id' => 'required|array',
+            'alat_id' => 'required|array|min:1',
+            'alat_id.*' => 'exists:alat,id|distinct',
             'jumlah' => 'required|array',
         ]);
 
         DB::beginTransaction();
 
         try {
+            foreach ($request->alat_id as $alatId) {
+                $jumlah = $request->jumlah[$alatId] ?? 1;
+                $alat = Alat::lockForUpdate()->findOrFail($alatId);
+                if ($alat->stok < $jumlah) {
+                    DB::rollBack();
+                    return back()->with('error', "Stok {$alat->nama_alat} tidak mencukupi (tersedia: {$alat->stok}).");
+                }
+            }
+
             // Buat header peminjaman
             $peminjaman = Peminjaman::create([
                 'user_id' => auth()->id(),
@@ -63,7 +73,7 @@ class PeminjamController extends Controller
     }
 
     public function peminjaman() { 
-        $peminjamans = Peminjaman::with('detailPinjams.alat')
+        $peminjamans = Peminjaman::with('detailPinjam.alat')
             ->where('user_id', auth()->id())
             ->whereIn('status', ['diajukan', 'dipinjam'])
             ->latest()
@@ -75,7 +85,7 @@ class PeminjamController extends Controller
     public function pengembalian()
     {
         $peminjamans = Peminjaman::with([
-            'detailPinjams.alat',
+            'detailPinjam.alat',
             'pengembalian'
         ])
             ->where('user_id', auth()->id())
@@ -104,7 +114,7 @@ class PeminjamController extends Controller
     // Melihat riwayat peminjaman user yang sedang login
     public function riwayatPeminjaman()
     {
-        $peminjamans = Peminjaman::with('detailPinjams.alat')
+        $peminjamans = Peminjaman::with('detailPinjam.alat')
             ->where('user_id', auth()->id())
             ->latest()
             ->get();
@@ -127,7 +137,7 @@ class PeminjamController extends Controller
             ->where('status', 'diajukan')
             ->count();
 
-        $peminjamanTerbaru = Peminjaman::with('detailPinjams.alat')
+        $peminjamanTerbaru = Peminjaman::with('detailPinjam.alat')
             ->where('user_id', $userId)
             ->latest('created_at')
             ->take(5)

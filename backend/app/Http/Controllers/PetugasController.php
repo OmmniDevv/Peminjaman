@@ -18,7 +18,7 @@ public function indexPeminjaman(Request $request)
 
     $peminjamans = Peminjaman::with([
         'user',
-        'detailPinjams.alat'
+        'detailPinjam.alat'
     ])
     ->when($search, function ($query, $search) {
         $query->whereHas('user', function ($q) use ($search) {
@@ -41,15 +41,27 @@ public function indexPeminjaman(Request $request)
         DB::beginTransaction();
 
         try {
-            $peminjaman = Peminjaman::with('detailPinjams')->findOrFail($id);
+            $peminjaman = Peminjaman::with('detailPinjam')->lockForUpdate()->findOrFail($id);
+
+            if ($peminjaman->status !== 'diajukan') {
+                DB::rollBack();
+                return back()->with('error', 'Peminjaman ini sudah diproses sebelumnya.');
+            }
+
+            foreach ($peminjaman->detailPinjam as $detail) {
+                $alat = Alat::lockForUpdate()->findOrFail($detail->alat_id);
+                if ($alat->stok < $detail->jumlah) {
+                    DB::rollBack();
+                    return back()->with('error', "Stok {$alat->nama_alat} tidak mencukupi.");
+                }
+            }
 
             $peminjaman->update([
                 'status' => 'dipinjam'
             ]);
 
-            // Kurangi stok alat secara otomatis
-            foreach ($peminjaman->detailPinjams as $detail) {
-                $alat = Alat::findOrFail($detail->alat_id);
+            foreach ($peminjaman->detailPinjam as $detail) {
+                $alat = Alat::lockForUpdate()->findOrFail($detail->alat_id);
                 $alat->stok -= $detail->jumlah;
                 $alat->save();
             }
@@ -105,7 +117,7 @@ public function indexPeminjaman(Request $request)
 
     $peminjamans = Peminjaman::with([
         'user',
-        'detailPinjams.alat'
+        'detailPinjam.alat'
     ])
     ->whereIn('status', ['dipinjam', 'pengajuan_kembali'])
     ->when($search, function ($query, $search) {
@@ -130,7 +142,7 @@ public function indexPeminjaman(Request $request)
 
     $query = Pengembalian::with([
         'peminjaman.user',
-        'peminjaman.detailPinjams.alat',
+        'peminjaman.detailPinjam.alat',
         'petugas'
     ]);
 
@@ -167,7 +179,7 @@ public function cetakLaporan(Request $request)
 
     $query = Pengembalian::with([
         'peminjaman.user',
-        'peminjaman.detailPinjams.alat',
+        'peminjaman.detailPinjam.alat',
         'petugas'
     ]);
 
@@ -206,8 +218,19 @@ public function cetakLaporan(Request $request)
 
     try {
 
-        $peminjaman = Peminjaman::with('detailPinjams')
+        $peminjaman = Peminjaman::with('detailPinjam')
+            ->lockForUpdate()
             ->findOrFail($peminjamanId);
+
+        if (! in_array($peminjaman->status, ['dipinjam', 'pengajuan_kembali', 'telat'])) {
+            DB::rollBack();
+            return back()->with('error', 'Peminjaman ini sudah dikembalikan sebelumnya.');
+        }
+
+        if (Pengembalian::where('peminjaman_id', $peminjaman->id)->exists()) {
+            DB::rollBack();
+            return back()->with('error', 'Pengembalian untuk peminjaman ini sudah dicatat.');
+        }
 
         // Simpan data pengembalian
         Pengembalian::create([
@@ -225,9 +248,9 @@ public function cetakLaporan(Request $request)
         ]);
 
         // Kembalikan stok alat
-        foreach ($peminjaman->detailPinjams as $detail) {
+        foreach ($peminjaman->detailPinjam as $detail) {
 
-            $alat = Alat::findOrFail($detail->alat_id);
+            $alat = Alat::lockForUpdate()->findOrFail($detail->alat_id);
 
             $alat->stok += $detail->jumlah;
 

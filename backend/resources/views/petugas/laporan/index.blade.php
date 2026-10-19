@@ -256,7 +256,7 @@
 
                                 <ul class="list-disc list-inside">
 
-                                    @foreach($pengembalian->peminjaman->detailPinjams as $detail)
+                                    @foreach($pengembalian->peminjaman->detailPinjam as $detail)
 
                                         <li>
                                             {{ $detail->alat->nama_alat ?? 'Alat Dihapus' }}

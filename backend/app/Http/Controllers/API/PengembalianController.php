@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Pengembalian\StorePengembalianRequest;
+use App\Http\Requests\Pengembalian\UpdatePengembalianRequest;
 use App\Models\Alat;
 use App\Models\Peminjaman;
 use App\Models\Pengembalian;

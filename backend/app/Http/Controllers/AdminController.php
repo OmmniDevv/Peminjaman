@@ -205,7 +205,16 @@ public function destroyAlat($id)
 {
     $alat = Alat::findOrFail($id);
 
-    // Hapus file gambar fisik jika ada
+    $adaPinjamanAktif = \App\Models\DetailPinjam::where('alat_id', $alat->id)
+        ->whereHas('peminjaman', function ($q) {
+            $q->whereIn('status', ['diajukan', 'dipinjam', 'telat', 'pengajuan_kembali']);
+        })
+        ->exists();
+
+    if ($adaPinjamanAktif) {
+        return back()->with('error', 'Alat tidak bisa dihapus karena sedang dalam peminjaman aktif.');
+    }
+
     if ($alat->gambar && file_exists(public_path($alat->gambar))) {
         unlink(public_path($alat->gambar));
     }
@@ -355,7 +364,7 @@ public function storePengembalian(Request $request)
         |--------------------------------------------------------------------------
         */
 
-        \App\Models\Pengembalian::create([
+        $pengembalian = \App\Models\Pengembalian::create([
             'peminjaman_id' => $peminjaman->id,
             'tgl_kembali' => $request->tgl_kembali,
             'kondisi_kembali' => $request->kondisi_kembali,
@@ -546,19 +555,35 @@ public function prosesPengembalian($id)
 
     // Pastikan hanya peminjaman yang sedang dipinjam atau telat
     // yang bisa diproses pengembaliannya
-    if (!in_array($peminjaman->status, ['dipinjam', 'telat'])) {
+    if (!in_array($peminjaman->status, ['dipinjam', 'telat', 'pengajuan_kembali'])) {
         return back()->with(
             'error',
             'Peminjaman ini tidak dapat diproses sebagai pengembalian.'
         );
     }
 
+    if (\App\Models\Pengembalian::where('peminjaman_id', $peminjaman->id)->exists()) {
+        return back()->with(
+            'error',
+            'Pengembalian untuk peminjaman ini sudah dicatat.'
+        );
+    }
+
     DB::beginTransaction();
 
     try {
-        // Kembalikan stok semua alat
+        \App\Models\Pengembalian::create([
+            'peminjaman_id' => $peminjaman->id,
+            'tgl_kembali' => now(),
+            'kondisi_kembali' => 'baik',
+            'denda' => 0,
+            'denda_kerusakan' => 0,
+            'petugas_id' => auth()->id(),
+        ]);
+
         foreach ($peminjaman->detailPinjam as $detail) {
-            $detail->alat->increment('stok', $detail->jumlah);
+            $alat = \App\Models\Alat::lockForUpdate()->findOrFail($detail->alat_id);
+            $alat->increment('stok', $detail->jumlah);
         }
 
         // Ubah status menjadi dikembalikan
@@ -1152,7 +1177,7 @@ public function updateStatusPeminjaman(Request $request, $id)
         ->findOrFail($id);
 
     $request->validate([
-        'status' => 'required|in:diajukan,dipinjam,telat,dikembalikan',
+        'status' => 'required|in:diajukan,dipinjam,telat,dikembalikan,pengajuan_kembali',
     ]);
 
     DB::beginTransaction();
@@ -1161,6 +1186,19 @@ public function updateStatusPeminjaman(Request $request, $id)
 
         $statusLama = $peminjaman->status;
         $statusBaru = $request->status;
+
+        $transisiValid = [
+            'diajukan' => ['dipinjam', 'ditolak'],
+            'dipinjam' => ['telat', 'dikembalikan', 'pengajuan_kembali'],
+            'telat' => ['dikembalikan', 'pengajuan_kembali'],
+            'pengajuan_kembali' => ['dikembalikan', 'dipinjam'],
+            'dikembalikan' => [],
+            'ditolak' => [],
+        ];
+
+        if (! in_array($statusBaru, $transisiValid[$statusLama] ?? [], true)) {
+            throw new \Exception("Transisi status dari '{$statusLama}' ke '{$statusBaru}' tidak diizinkan.");
+        }
 
         /*
         |--------------------------------------------------------------------------
@@ -1281,7 +1319,7 @@ public function destroyPeminjaman($id)
     $peminjaman = Peminjaman::with('detailPinjam')->findOrFail($id);
 
     // Jika statusnya sedang dipinjam, kembalikan stok terlebih dahulu sebelum dihapus
-    if ($peminjaman->status == 'dipinjam') {
+    if (in_array($peminjaman->status, ['dipinjam', 'telat', 'pengajuan_kembali'], true)) {
         foreach ($peminjaman->detailPinjam as $detail) {
             $detail->alat->increment('stok', $detail->jumlah);
         }

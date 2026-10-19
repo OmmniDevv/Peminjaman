@@ -86,7 +86,7 @@
 
                     <tbody>
 
-                        @foreach ($peminjaman->detailPinjams as $index => $detail)
+                        @foreach ($peminjaman->detailPinjam as $index => $detail)
 
                             <tr class="border-t">
 

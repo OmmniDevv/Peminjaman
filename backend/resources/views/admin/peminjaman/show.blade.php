@@ -160,7 +160,7 @@
 
                 <tbody class="text-gray-700 text-sm">
 
-                    @forelse($peminjaman->detailPinjams as $index => $detail)
+                    @forelse($peminjaman->detailPinjam as $index => $detail)
 
                         <tr class="hover:bg-gray-50 transition">
 
